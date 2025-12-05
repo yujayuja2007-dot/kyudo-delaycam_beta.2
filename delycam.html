@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>30秒遅延カメラ</title>
+<style>
+  body { margin: 0; background: black; }
+  canvas { width: 100vw; height: 100vh; object-fit: cover; }
+</style>
+</head>
+<body>
+
+<video id="video" playsinline style="display:none;"></video>
+<canvas id="canvas"></canvas>
+
+<script>
+(async () => {
+    const delaySeconds = 30;
+    const fps = 15; // iPadでも安定動作するフレーム数
+    const bufferSize = delaySeconds * fps;
+    const frameBuffer = [];
+    
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // iPadカメラアクセス
+    video.srcObject = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }, // 背面カメラ
+        audio: false
+    });
+
+    await video.play();
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    function render() {
+        // 現在のフレームを保存
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = video.videoWidth;
+        tempCanvas.height = video.videoHeight;
+        tempCanvas.getContext("2d").drawImage(video, 0, 0);
+
+        frameBuffer.push(tempCanvas);
+
+        // バッファが delay 秒分たまったら描画
+        if (frameBuffer.length > bufferSize) {
+            const delayedFrame = frameBuffer.shift(); 
+            ctx.drawImage(delayedFrame, 0, 0);
+        }
+
+        setTimeout(render, 1000 / fps);
+    }
+
+    render();
+})();
+</script>
+
+</body>
+</html>
